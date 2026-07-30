@@ -598,8 +598,112 @@ function 今日发布程序() {
         var 卡 = 0
         var 信誉分重试 = 0
         var 跳过信誉分 = false
+        var 信誉分超时 = 60000
+        var 信誉分开始时间 = new Date().getTime()
         while (true) {
-            if (findMatches(/我的/, 0)) {
+            if (跳过信誉分 == false && 账号 && new Date().getTime() - 信誉分开始时间 > 信誉分超时) {
+                跳过信誉分 = true
+                floatyLog("超时未识别到信誉分,自动跳过")
+            }
+            if (awcontrol(/信用分/, 1) || 跳过信誉分) {
+                卡 = 0
+                跳过信誉分 = false
+                信誉分重试 = 0
+                信誉分开始时间 = new Date().getTime()
+                var 信誉分文本 = null
+                信用分 = findMatches(/信用分/, 2)
+                if (信用分) {
+                    let 粉丝数控件 = className("android.widget.TextView").boundsInside(信用分[0] - w * 0.1, 信用分[1] + h * 0.01, 信用分[0] + w * 0.1, 信用分[1] + h * 0.15).visibleToUser(true).findOne(1000)
+                    if (粉丝数控件) {
+                        log(粉丝数控件.text())
+                        信誉分文本 = 粉丝数控件.text()
+                    }
+                }
+                if (信誉分文本 === null || 信誉分文本 === "") {
+                    信用分 = 0
+                    floatyLog("未识别到信誉分,按0上传")
+                } else {
+                    信用分 = 信誉分文本
+                }
+                var 设备编号 = encodeURIComponent(ui.输入框_用户名.text())//url解密
+                var 用户名 = encodeURIComponent(ui.输入框_设备编号.text())//url解密
+                if (总收益 === undefined || 总收益 === null || 总收益 === "" || isNaN(总收益)) {
+                    总收益 = 0
+                }
+                if (昨日收益 === undefined || 昨日收益 === null || 昨日收益 === "" || isNaN(昨日收益)) {
+                    昨日收益 = 0
+                }
+
+                昨日收益 = encodeURIComponent(昨日收益)//url解密
+                floatyLog(账号 + "..总收益" + 总收益 + "..昨日收益" + 昨日收益 + "..信用分" + 信用分)
+                // var r = http.get("http://123.57.188.23:9107/API_POST_info.php?user_name=" + 设备编号 + "&device_name=" + 用户名 + "&app_name=" + 账号 + "&all_shouyi=" + 总收益 + "&zuori_shouyi=" + "&xinyongfen=" + 信用分);
+                url = 'http://123.57.188.23:9107/API_POST_info.php'
+                // log(r)
+                data = {
+                    "user_name": 设备编号,
+                    "device_name": 用户名,
+                    "app_name": 账号,
+                    "all_shouyi": 总收益,
+                    "zuori_shouyi": 昨日收益,
+                    "xinyongfen": 信用分,
+
+                }
+                log('data ', data)
+                let r = http.post(url, data);
+                log("code = " + r.statusCode);
+                let 返回值1 = r.body.string()
+                log("html = " + 返回值1);
+                if (r.statusCode == 200) {
+                    let response = 返回值1
+                    log(response)
+                    if (aw查找字符串(response, "OK") >= 0) {
+                        log(response)
+                        response = java.net.URLDecoder.decode(response, "UTF-8");
+                        log("解码:" + response)
+                        if (aw查找字符串(response, "result") >= 0) {
+                            var nnn = JSON.parse(response)
+                            类目 = nnn.main_title
+                            floatyLog(类目)
+                            发布次数 = nnn.clear_num
+                            floatyLog(发布次数)
+                            滑动次数 = nnn.huadong
+                            floatyLog(滑动次数)
+                            发布时间 = nnn.post_max_time
+                            点赞数量小 = nnn.dz_min_nums
+                            点赞数量大 = nnn.dz_max_nums
+                            floatyLog(点赞数量小 + "     " + 点赞数量大)
+                        }
+                        floatyLog("更新成功---")//写入主显示 
+                        上传 = true
+                        back()
+                        sleep(1000)
+                        floatyLog("强制关闭app数据清除")
+                        强制关闭app数据清除("今日头条")
+                        back()
+                        sleep(1000)
+                        home()
+                        aw打开app("今日头条")
+                        floatyLog("今日头条")
+                        sleep(1000)
+                        break
+                    } else if (aw查找字符串(response, "ERROR") >= 0) {
+                        floatyLog("APP昵称不能为空---")//写入主显示   
+                        back()
+                        sleep(1000)
+                        floatyLog("强制关闭app数据清除")
+                        强制关闭app数据清除("今日头条")
+                        back()
+                        sleep(1000)
+                        home()
+                        aw打开app("今日头条")
+                        floatyLog("今日头条")
+                        sleep(1000)
+                    } else if (aw查找字符串(response, "STOP") >= 0) {
+                        floatyLog("当前用户不存在或被禁用---")//写入主显示   
+                        sleep(30000000)
+                    }
+                }
+            } else if (findMatches(/我的/, 0)) {
                 floatyLog("我的")
                 sleep(5000)
                 卡 = 0
@@ -630,7 +734,11 @@ function 今日发布程序() {
                         }
                     }
                 } else {
-
+                    信誉分重试 = 信誉分重试 + 1
+                    if (信誉分重试 >= 1 && 账号) {
+                        跳过信誉分 = true
+                        floatyLog("未识别到信誉分,自动跳过")
+                    }
                     floatyLog("强制关闭app数据清除")
                     强制关闭app数据清除("今日头条")
                     back()
@@ -694,97 +802,6 @@ function 今日发布程序() {
             } else if (awcontrol(/我知道了/, 0)) {
                 floatyLog("我知道了..")
                 sleep(3000)
-            } else if (awcontrol(/信用分/, 1) || 跳过信誉分) {
-                卡 = 0
-                跳过信誉分 = false
-                信誉分重试 = 0
-                var 信誉分文本 = null
-                信用分 = findMatches(/信用分/, 2)
-                if (信用分) {
-                    let 粉丝数控件 = className("android.widget.TextView").boundsInside(信用分[0] - w * 0.1, 信用分[1] + h * 0.01, 信用分[0] + w * 0.1, 信用分[1] + h * 0.15).visibleToUser(true).findOne(1000)
-                    if (粉丝数控件) {
-                        log(粉丝数控件.text())
-                        信誉分文本 = 粉丝数控件.text()
-                    }
-                }
-                if (信誉分文本 === null || 信誉分文本 === "") {
-                    信用分 = 0
-                    floatyLog("未识别到信誉分,按0上传")
-                } else {
-                    信用分 = 信誉分文本
-                }
-                var 设备编号 = encodeURIComponent(ui.输入框_用户名.text())//url解密
-                var 用户名 = encodeURIComponent(ui.输入框_设备编号.text())//url解密
-
-                昨日收益 = encodeURIComponent(昨日收益)//url解密
-                floatyLog(账号 + "..总收益" + 总收益 + "..昨日收益" + 昨日收益 + "..信用分" + 信用分)
-                // var r = http.get("http://123.57.188.23:9107/API_POST_info.php?user_name=" + 设备编号 + "&device_name=" + 用户名 + "&app_name=" + 账号 + "&all_shouyi=" + 总收益 + "&zuori_shouyi=" + "&xinyongfen=" + 信用分);
-                url = 'http://123.57.188.23:9107/API_POST_info.php'
-                // log(r)
-                data = {
-                    "user_name": 设备编号,
-                    "device_name": 用户名,
-                    "app_name": 账号,
-                    "all_shouyi": 总收益,
-                    "zuori_shouyi": 昨日收益,
-                    "xinyongfen": 信用分,
-
-                }
-                log('data ', data)
-                let r = http.post(url, data);
-                log("code = " + r.statusCode);
-                let 返回值1 = r.body.string()
-                log("html = " + 返回值1);
-                if (r.statusCode == 200) {
-                    let response = r.body.string()
-                    log(response)
-                    if (aw查找字符串(response, "OK") >= 0) {
-                        log(response)
-                        response = java.net.URLDecoder.decode(response, "UTF-8");
-                        log("解码:" + response)
-                        if (aw查找字符串(response, "result") >= 0) {
-                            var nnn = JSON.parse(response)
-                            类目 = nnn.main_title
-                            floatyLog(类目)
-                            发布次数 = nnn.clear_num
-                            floatyLog(发布次数)
-                            滑动次数 = nnn.huadong
-                            floatyLog(滑动次数)
-                            发布时间 = nnn.post_max_time
-                            点赞数量小 = nnn.dz_min_nums
-                            点赞数量大 = nnn.dz_max_nums
-                            floatyLog(点赞数量小 + "     " + 点赞数量大)
-                        }
-                        floatyLog("更新成功---")//写入主显示 
-                        上传 = true
-                        back()
-                        sleep(1000)
-                        floatyLog("强制关闭app数据清除")
-                        强制关闭app数据清除("今日头条")
-                        back()
-                        sleep(1000)
-                        home()
-                        aw打开app("今日头条")
-                        floatyLog("今日头条")
-                        sleep(1000)
-                        break
-                    } else if (aw查找字符串(response, "ERROR") >= 0) {
-                        floatyLog("APP昵称不能为空---")//写入主显示   
-                        back()
-                        sleep(1000)
-                        floatyLog("强制关闭app数据清除")
-                        强制关闭app数据清除("今日头条")
-                        back()
-                        sleep(1000)
-                        home()
-                        aw打开app("今日头条")
-                        floatyLog("今日头条")
-                        sleep(1000)
-                    } else if (aw查找字符串(response, "STOP") >= 0) {
-                        floatyLog("当前用户不存在或被禁用---")//写入主显示   
-                        sleep(30000000)
-                    }
-                }
             } else if (findMatches(/等待/, 0)) {
                 floatyLog("等待")
                 sleep(2000)
@@ -797,7 +814,7 @@ function 今日发布程序() {
                 if (卡 >= 10) {
                     卡 = 0
                     信誉分重试 = 信誉分重试 + 1
-                    if (信誉分重试 >= 2) {
+                    if (信誉分重试 >= 1 && 账号) {
                         跳过信誉分 = true
                         floatyLog("未识别到信誉分,自动跳过")
                     }
