@@ -108,22 +108,8 @@ function ScriptUI() {
                 </ScrollView>
             </frame>
         </vertical>
-        <fab id="add" w="auto" h="auto" src="@drawable/ic_vpn_key_black_48dp"
-            margin="16" layout_gravity="bottom|right" tint="#ffffff" />
     </frame>
 }
-ui.add.on("click", () => {
-    dialogs.rawInput("请输入激活码")
-        .then(title => {
-            if (!title) {
-                return;
-            }
-            log(title)
-            var 缓存 = storages.create("输入框1")
-            缓存.put("激活码", title);
-        })
-});
-
 importClass('android.view.WindowManager');
 activity.setSupportActionBar(ui.toolbar);
 ui.emitter.on("create_options_menu", menu => {
