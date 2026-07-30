@@ -598,10 +598,11 @@ function 今日发布程序() {
         var 卡 = 0
         var 信誉分重试 = 0
         var 跳过信誉分 = false
-        var 信誉分超时 = 60000
+        var 信誉分超时 = 10000
+        var 信誉分计时中 = false
         var 信誉分开始时间 = new Date().getTime()
         while (true) {
-            if (跳过信誉分 == false && 账号 && new Date().getTime() - 信誉分开始时间 > 信誉分超时) {
+            if (跳过信誉分 == false && 信誉分计时中 && 账号 && new Date().getTime() - 信誉分开始时间 > 信誉分超时) {
                 跳过信誉分 = true
                 floatyLog("超时未识别到信誉分,自动跳过")
             }
@@ -609,6 +610,7 @@ function 今日发布程序() {
                 卡 = 0
                 跳过信誉分 = false
                 信誉分重试 = 0
+                信誉分计时中 = false
                 信誉分开始时间 = new Date().getTime()
                 var 信誉分文本 = null
                 信用分 = findMatches(/信用分/, 2)
@@ -785,6 +787,8 @@ function 今日发布程序() {
                 }
 
                 if (isNaN(昨日收益) == false && isNaN(总收益) == false) {
+                    信誉分计时中 = true
+                    信誉分开始时间 = new Date().getTime()
                     back()
                     sleep(2000)
                     if (findOcr(/.*创作权益.*/, w * 0.1, h * 0.05, w, h * 0.9, true, 3000)) {
